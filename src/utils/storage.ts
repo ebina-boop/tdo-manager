@@ -11,7 +11,13 @@ export function loadData(): AppData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_DATA;
-    return JSON.parse(raw) as AppData;
+    const data = JSON.parse(raw) as AppData;
+    // 既存データに position がない場合のマイグレーション
+    data.todos = data.todos.map((t, i) => ({
+      ...t,
+      position: t.position ?? i,
+    }));
+    return data;
   } catch {
     return DEFAULT_DATA;
   }

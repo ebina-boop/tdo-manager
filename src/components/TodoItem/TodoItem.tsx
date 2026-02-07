@@ -1,44 +1,69 @@
 import { useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import { Badge } from "../common/Badge";
-import { ConfirmDialog } from "../common/ConfirmDialog";
-import { TodoForm } from "../TodoForm/TodoForm";
+import { TodoDetail } from "../TodoDetail/TodoDetail";
 import { formatDate, isOverdue } from "../../utils/date";
 import type { Todo } from "../../types";
 import styles from "./TodoItem.module.css";
 
 interface TodoItemProps {
   todo: Todo;
+  onDragStart?: () => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: () => void;
 }
 
-export function TodoItem({ todo }: TodoItemProps) {
-  const { toggleTodo, deleteTodo } = useAppContext();
-  const [showEdit, setShowEdit] = useState(false);
-  const [showDelete, setShowDelete] = useState(false);
+export function TodoItem({ todo, onDragStart, onDragOver, onDrop }: TodoItemProps) {
+  const { toggleTodo } = useAppContext();
+  const [showDetail, setShowDetail] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const overdue = !todo.completed && isOverdue(todo.deadline);
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("label")) return;
+    setShowDetail(true);
+  };
+
+  const itemClass = [
+    styles.item,
+    todo.completed ? styles.completed : "",
+    isDragging ? styles.dragging : "",
+    isDragOver ? styles.dragOver : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <>
-      <div className={`${styles.item} ${todo.completed ? styles.completed : ""}`}>
-        <div className={styles.actions}>
-          <button
-            className={styles.actionBtn}
-            onClick={() => setShowEdit(true)}
-            aria-label="編集"
-          >
-            ✎
-          </button>
-          <button
-            className={styles.actionBtn}
-            onClick={() => setShowDelete(true)}
-            aria-label="削除"
-          >
-            🗑
-          </button>
-        </div>
+      <div
+        className={itemClass}
+        onClick={handleCardClick}
+        draggable
+        onDragStart={(e) => {
+          setIsDragging(true);
+          e.dataTransfer.effectAllowed = "move";
+          onDragStart?.();
+        }}
+        onDragEnd={() => setIsDragging(false)}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragOver(true);
+          onDragOver?.(e);
+        }}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setIsDragOver(false);
+          onDrop?.();
+        }}
+      >
         <div className={styles.topRow}>
-          <label className={styles.checkLabel}>
+          <label
+            className={styles.checkLabel}
+            onClick={(e) => e.stopPropagation()}
+          >
             <input
               type="checkbox"
               checked={todo.completed}
@@ -68,17 +93,9 @@ export function TodoItem({ todo }: TodoItemProps) {
         )}
       </div>
 
-      {showEdit && (
-        <TodoForm todo={todo} onClose={() => setShowEdit(false)} />
+      {showDetail && (
+        <TodoDetail todo={todo} onClose={() => setShowDetail(false)} />
       )}
-
-      <ConfirmDialog
-        open={showDelete}
-        onClose={() => setShowDelete(false)}
-        onConfirm={() => deleteTodo(todo.id)}
-        title="ToDoの削除"
-        message={`「${todo.title}」を削除しますか？`}
-      />
     </>
   );
 }

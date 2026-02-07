@@ -78,6 +78,7 @@ export function FilterBar() {
             update({ sortField: e.target.value as TodoSortField })
           }
         >
+          <option value="position">手動</option>
           <option value="createdAt">作成日</option>
           <option value="updatedAt">更新日</option>
           <option value="priority">優先度</option>

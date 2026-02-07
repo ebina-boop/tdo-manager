@@ -34,6 +34,8 @@ interface AppContextValue {
   deleteTodo: (id: string) => void;
   toggleTodo: (id: string) => void;
 
+  reorderTodos: (fromId: string, toId: string) => void;
+
   // Filters
   filters: FilterState;
   setFilters: (filters: FilterState) => void;
@@ -54,8 +56,8 @@ const DEFAULT_FILTERS: FilterState = {
   priority: "all",
   tag: "",
   search: "",
-  sortField: "createdAt",
-  sortOrder: "desc",
+  sortField: "position",
+  sortOrder: "asc",
 };
 
 const PRIORITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
@@ -123,10 +125,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     ) => {
       if (!activeProjectId) return;
       const timestamp = now();
+      const maxPos = data.todos
+        .filter((t) => t.projectId === activeProjectId)
+        .reduce((max, t) => Math.max(max, t.position ?? 0), -1);
       const todo: Todo = {
         id: generateId(),
         projectId: activeProjectId,
         completed: false,
+        position: maxPos + 1,
         createdAt: timestamp,
         updatedAt: timestamp,
         ...input,
@@ -169,6 +175,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
       persist(next);
     },
     [data, persist]
+  );
+
+  const reorderTodos = useCallback(
+    (fromId: string, toId: string) => {
+      if (fromId === toId) return;
+      // 現在のプロジェクトのTodoをposition順に取得
+      const projectTodoIds = data.todos
+        .filter((t) => t.projectId === activeProjectId)
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+        .map((t) => t.id);
+
+      const fromIndex = projectTodoIds.indexOf(fromId);
+      const toIndex = projectTodoIds.indexOf(toId);
+      if (fromIndex === -1 || toIndex === -1) return;
+
+      // 配列内で移動
+      projectTodoIds.splice(fromIndex, 1);
+      projectTodoIds.splice(toIndex, 0, fromId);
+
+      // 新しいpositionを割り当て
+      const positionMap = new Map<string, number>();
+      projectTodoIds.forEach((id, i) => positionMap.set(id, i));
+
+      const next = {
+        ...data,
+        todos: data.todos.map((t) =>
+          positionMap.has(t.id) ? { ...t, position: positionMap.get(t.id)! } : t
+        ),
+      };
+      persist(next);
+    },
+    [data, persist, activeProjectId]
   );
 
   // --- Derived ---
@@ -221,7 +259,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const field = filters.sortField;
       let cmp = 0;
 
-      if (field === "priority") {
+      if (field === "position") {
+        cmp = (a.position ?? 0) - (b.position ?? 0);
+      } else if (field === "priority") {
         cmp = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
       } else if (field === "deadline") {
         const ad = a.deadline ?? "9999-12-31";
@@ -251,6 +291,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updateTodo,
     deleteTodo,
     toggleTodo,
+    reorderTodos,
     filters,
     setFilters,
     filteredTodos,

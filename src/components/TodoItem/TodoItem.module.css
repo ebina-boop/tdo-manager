@@ -8,6 +8,7 @@
   transition: box-shadow 0.15s, transform 0.15s;
   position: relative;
   min-height: 0;
+  cursor: pointer;
 }
 
 .item:hover {
@@ -17,6 +18,17 @@
 
 .completed {
   opacity: 0.55;
+}
+
+.dragging {
+  opacity: 0.4;
+  transform: scale(0.97);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.dragOver {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
 }
 
 .topRow {
@@ -86,30 +98,3 @@
   font-weight: 500;
 }
 
-.actions {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  display: flex;
-  gap: 2px;
-  opacity: 0;
-  transition: opacity 0.1s;
-}
-
-.item:hover .actions {
-  opacity: 1;
-}
-
-.actionBtn {
-  background: var(--color-surface);
-  border: none;
-  cursor: pointer;
-  padding: 4px 6px;
-  font-size: 0.8rem;
-  color: var(--color-text-secondary);
-  border-radius: 4px;
-}
-
-.actionBtn:hover {
-  background: var(--color-bg);
-}

@@ -13,6 +13,7 @@ export interface Todo {
   priority: Priority;
   deadline: string | null;
   tags: string[];
+  position: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -30,7 +31,7 @@ export interface AppData {
   todos: Todo[];
 }
 
-export type TodoSortField = "createdAt" | "updatedAt" | "priority" | "deadline" | "title";
+export type TodoSortField = "position" | "createdAt" | "updatedAt" | "priority" | "deadline" | "title";
 export type SortOrder = "asc" | "desc";
 export type StatusFilter = "all" | "active" | "completed";
 
